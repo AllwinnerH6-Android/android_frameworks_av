@@ -1,0 +1,26 @@
+LOCAL_PATH:= $(call my-dir)
+include $(CLEAR_VARS)
+include $(LOCAL_PATH)/../../config.mk
+
+LOCAL_MODULE_TAGS := optional
+
+LOCAL_SRC_FILES:= omxdemo.c \
+
+LOCAL_C_INCLUDES := \
+	$(LOCAL_PATH) \
+	$(LOCAL_PATH)/../../ \
+	$(LOCAL_PATH)/../../../libcedarc/openmax/omxcore/inc \
+        $(LOCAL_PATH)/../../libcore/base/include
+
+
+LOCAL_SHARED_LIBRARIES := \
+	libcutils \
+	libutils \
+        liblog \
+	libcdx_base \
+	libOmxCore
+
+LOCAL_32_BIT_ONLY := true
+LOCAL_MODULE:= testomx
+#include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_EXECUTABLE)
