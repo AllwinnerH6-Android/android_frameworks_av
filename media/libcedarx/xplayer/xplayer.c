@@ -2195,7 +2195,7 @@ static void* XPlayerThread(void* arg)
                 continue;
             }
 
-            //* for complete status, we seek to the begin of the file.
+            //* for complete status, we seek to mSeekTime(the last seek time).
             if(mPriData->mStatus == XPLAYER_STATUS_COMPLETE)
             {
                 AwMessage newMsg;
@@ -2209,7 +2209,6 @@ static void* XPlayerThread(void* arg)
                     }
 
                     mPriData->mSeeking  = 1;
-                    mPriData->mSeekTime = 0;
                     mPriData->mSeekSync = 0;
                     mPriData->mSeekByInner = 1;
                     logd("seekTo %.2f secs", mPriData->mSeekTime / 1E3);

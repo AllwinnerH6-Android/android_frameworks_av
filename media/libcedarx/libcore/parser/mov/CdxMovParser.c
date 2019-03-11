@@ -15,7 +15,83 @@
 #include "CdxMovParser.h"
 #include "zlib.h"
 
-#if BOARD_USE_PLAYREADY
+#if BOARD_USE_PLAYREADY_NEW
+extern int CreatePlayReadyCryptoPlugin();
+extern int ClosePlayReadyCryptoPlugin();
+extern int PlayReadyCryptoPluginCrypto(uint64_t iv,uint32_t ClearDataNum,uint32_t EncryptedDataNum,
+    uint8_t **opaque_buf);
+extern void* PlayReadyGetInputBuffer();
+
+static int PlayReadyOpenDrm(MOVContext *c)
+{
+    CDX_UNUSE(c);
+    int ret = CreatePlayReadyCryptoPlugin();
+    return ret;
+}
+static int PlayReadyCloseDrm(MOVContext *c)
+{
+    CDX_UNUSE(c);
+    int ret = ClosePlayReadyCryptoPlugin();
+    return ret;
+}
+static cdx_int32 PlayReadyRead(MOVContext *c, CdxStreamT *fp, CdxPacketT *pkt)
+{
+    int sample_index = c->chunk_info.index;
+    uint8_t *opaque_buf = NULL;
+    //native_handle_t *nh = native_handle_create(0 /*numFds*/, 1 /*numInts*/);
+    //nh->data[0] = (int)(uintptr_t)opaque_buf;
+    void *buf = PlayReadyGetInputBuffer();
+    if (buf == NULL) {
+        ALOGE("malloc failed.");
+        return -1;
+    }
+    int size = CdxStreamRead(fp, buf, pkt->length);
+    if (c->senc_data && sample_index >= 0) {
+        if (c->senc_data[sample_index].region_count == 0) {
+            c->senc_data[sample_index].region_count = 2;
+            c->senc_data[sample_index].regions[0] = 0;
+            c->senc_data[sample_index].regions[1] = pkt->length;
+        }
+        ALOGV("regions[0]=[%d] regions[1]=[%d]",
+            c->senc_data[sample_index].regions[0],
+            c->senc_data[sample_index].regions[1]);
+
+        int result = PlayReadyCryptoPluginCrypto(c->senc_data[sample_index].iv,
+            c->senc_data[sample_index].regions[0],
+            c->senc_data[sample_index].regions[1],
+            &opaque_buf);
+        if(result < 0 || opaque_buf == NULL)
+            return -1;
+
+#if BOARD_PLAYREADY_USE_SECUREOS
+        if(pkt->type == CDX_MEDIA_VIDEO) {
+            if (pkt->buf)
+                HwSecureAllocCopy(pkt->buf, opaque_buf, pkt->buflen);
+            if (pkt->ringBuf)
+                HwSecureAllocCopy(pkt->ringBuf, (cdx_int32 *)opaque_buf + pkt->buflen, pkt->length -
+                pkt->buflen);
+        } else {
+            if (pkt->buf)
+                HwSecureAllocRead(pkt->buf, opaque_buf, pkt->buflen);
+            if (pkt->ringBuf)
+                HwSecureAllocRead(pkt->ringBuf, (cdx_int32 *)opaque_buf + pkt->buflen, pkt->length -
+                pkt->buflen);
+        }
+#else
+        ALOGV("data[%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x,%x]",
+            opaque_buf[0],opaque_buf[1],opaque_buf[2],opaque_buf[3],
+            opaque_buf[4],opaque_buf[5],opaque_buf[6],opaque_buf[7],
+            opaque_buf[8],opaque_buf[9],opaque_buf[10],opaque_buf[11],
+            opaque_buf[12],opaque_buf[13],opaque_buf[14],opaque_buf[15]);
+        if (pkt->buf && (result >= pkt->buflen))
+            memcpy(pkt->buf, opaque_buf, pkt->buflen);
+        if (pkt->ringBuf && (result >= pkt->buflen))
+            memcpy(pkt->ringBuf, (cdx_int32 *)opaque_buf + pkt->buflen, result - pkt->buflen);
+#endif
+    }
+    return size;
+}
+#elif BOARD_USE_PLAYREADY
 #include <drmcrt.h>
 #include <drmcontextsizes.h>
 #include <drmmanager.h>
@@ -109,10 +185,10 @@ static inline void stringToWString(DRM_WCHAR *dst, char *src)
     while ((*dst++ = *src++));
 }
 
-static DRM_RESULT PlayReadyOpenDrm()
+static DRM_RESULT PlayReadyOpenDrm(MOVContext *c)
 {
     DRM_RESULT dr = DRM_SUCCESS;
-
+    CDX_UNUSE(c);
     char prhds[] = PLAYREADY_TMPFILE_DIR "pr.hds";
     DRM_WCHAR wprhds[sizeof(prhds)] = {0};
     stringToWString(wprhds, prhds);
@@ -195,10 +271,10 @@ ErrorExit:
     return dr;
 }
 
-static DRM_RESULT PlayReadyCloseDrm()
+static DRM_RESULT PlayReadyCloseDrm(MOVContext *c)
 {
     DRM_RESULT dr = DRM_SUCCESS;
-
+    CDX_UNUSE(c);
     if (drminfo.IsInit == 1) {
         if (drminfo.IsDecryptInit)
         {
@@ -272,12 +348,14 @@ static cdx_int32 PlayReadyRead(MOVContext *c, CdxStreamT *fp, CdxPacketT *pkt)
 }
 
 #else
-static int PlayReadyOpenDrm()
+static int PlayReadyOpenDrm(MOVContext *c)
 {
+    CDX_UNUSE(c);
     return 0;
 }
-static int PlayReadyCloseDrm()
+static int PlayReadyCloseDrm(MOVContext *c)
 {
+    CDX_UNUSE(c);
     return 0;
 }
 static cdx_int32 PlayReadyRead(MOVContext *c, CdxStreamT *fp, CdxPacketT *pkt)
@@ -410,7 +488,7 @@ static cdx_int32 __CdxMovParserClose(CdxParserT *parser)
 
     if (c->bPlayreadySegment)
     {
-        PlayReadyCloseDrm();
+        PlayReadyCloseDrm(c);
     }
     EraseId3(&c->id3v2);
     CdxMovClose(tmpMovPsr);
@@ -654,7 +732,7 @@ static cdx_int32 __CdxMovParserRead(CdxParserT *parser, CdxPacketT *pkt)
         }
         else
         {
-            unsigned char* buf = malloc(diff);
+            unsigned char* buf = (unsigned char*)malloc(diff);
             ret = CdxStreamRead(fp, buf, diff);
             free(buf);
             if(ret < 0)
@@ -873,7 +951,7 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
         else if(st->codec.codecType == CODEC_TYPE_AUDIO && !st->unsurpoort)
         {
             audio = &pMediaInfo->program[0].audio[pMediaInfo->program[0].audioNum];
-            audio->eCodecFormat    = st->eCodecFormat;
+            audio->eCodecFormat    = (enum EAUDIOCODECFORMAT)st->eCodecFormat;
             audio->eSubCodecFormat = st->eSubCodecFormat;
             audio->nChannelNum     = st->codec.channels;
             audio->nBitsPerSample  = st->codec.bitsPerSample;
@@ -910,8 +988,8 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
         else if(st->codec.codecType == CODEC_TYPE_SUBTITLE)
         {
             subtitle = &pMediaInfo->program[0].subtitle[pMediaInfo->program[0].subtitleNum];
-            subtitle->eCodecFormat = st->eCodecFormat;
-            subtitle->eTextFormat = st->eSubCodecFormat;
+            subtitle->eCodecFormat = (ESubtitleCodec)st->eCodecFormat;
+            subtitle->eTextFormat = (ESubtitleTextFormat)st->eSubCodecFormat;
             //subtitle->nReferenceVideoHeight = video->nHeight;
             //subtitle->nReferenceVideoWidth  = video->nWidth;
             memcpy(subtitle->strLang, st->language, 32);
@@ -959,14 +1037,18 @@ static cdx_int32 __CdxMovParserGetMediaInfo(CdxParserT *parser, CdxMediaInfoT * 
 
     pMediaInfo->bitrate = video_avg_bitrate;
 
-    if(!c->bSeekAble || (tmpMovPsr->hasVideo && !tmpMovPsr->hasIdx))
+    if(!c->bSeekAble || (tmpMovPsr->hasVideo && (!tmpMovPsr->hasIdx &&
+        video->eCodecFormat != VIDEO_CODEC_FORMAT_MJPEG)))
     {
-        CDX_LOGD("can not seek");
+        CDX_LOGD("can not seek. bSeekable [%s], hasVideo [%s], hasIdx [%s].",
+            c->bSeekAble?"Yes":"No", tmpMovPsr->hasVideo?"Yes":"No", tmpMovPsr->hasIdx?"Yes":"No");
         pMediaInfo->bSeekable = 0;
     }
     else
     {
-        pMediaInfo->bSeekable = 1; //
+        pMediaInfo->bSeekable = 1;
+        if(tmpMovPsr->hasVideo && video->eCodecFormat == VIDEO_CODEC_FORMAT_MJPEG)
+            c->bSeekWithoutKeyframe = 1;
     }
 
     MOVStreamContext *st = NULL;
@@ -1093,7 +1175,7 @@ static int __CdxMovParserControl(CdxParserT *parser, int cmd, void *param)
 
         case CDX_PSR_CMD_GET_CACHESTATE:
         {
-            return MovGetCacheState(impl, param);
+            return MovGetCacheState(impl, (struct ParserCacheStateS *)param);
         }
 
         case CDX_PSR_CMD_SET_FORCESTOP:
@@ -1176,7 +1258,7 @@ int __CdxMovParserInit(CdxParserT *parser)
     }
 
     if (c->bPlayreadySegment)
-        PlayReadyOpenDrm();
+        PlayReadyOpenDrm(c);
 
     CDX_LOGD("***** mov open success!!");
     CdxAtomicDec(&tmpMovPsr->ref);

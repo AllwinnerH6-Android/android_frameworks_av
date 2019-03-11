@@ -333,13 +333,10 @@ static inline void freeBuffersAllocBySelf(AwOmxVdec* impl, AwOmxVdecPort* port)
         for(nIndex=0; nIndex < port->m_sBufList.nBufNeedSize; nIndex++)
         {
             OMX_U8* pBuffer = port->m_sBufList.pBufArr[nIndex].pBuffer;
-            if(pBuffer != NULL)
+            if(pBuffer != NULL && port->bAllocBySelfFlags)
             {
-                if(port->bAllocBySelfFlags)
-                {
-                    OmxVdecoderFreePortBuffer(impl->pDec, port, pBuffer);
-                    pBuffer = NULL;
-                }
+                OmxVdecoderFreePortBuffer(impl->pDec, port, pBuffer);
+                pBuffer = NULL;
             }
         }
     }
@@ -364,7 +361,7 @@ static void controlSetState(AwOmxVdec* impl, OMX_STATETYPE target_state)
         impl->m_Callbacks.EventHandler(&impl->base.mOmxComp, impl->m_pAppData,
                                         OMX_EventError, OMX_ErrorSameState, 0 , NULL);
     }
-    else if (target_state ==  OMX_StateInvalid)
+    else if (target_state == OMX_StateInvalid)
     {
         impl->m_state = OMX_StateInvalid;
         impl->m_Callbacks.EventHandler(&impl->base.mOmxComp, impl->m_pAppData,
@@ -450,7 +447,6 @@ static inline void controlStopPort(AwOmxVdec* impl, OMX_U32 portIdx)
     {
         if (portIdx == kInputPortIndex && !inDef->bPopulated)
         {
-            //*Return cmdcomplete event if input unpopulated
             impl->m_Callbacks.EventHandler(&impl->base.mOmxComp, impl->m_pAppData,
                                             OMX_EventCmdComplete, OMX_CommandPortDisable,
                                             kInputPortIndex, NULL);
@@ -458,7 +454,6 @@ static inline void controlStopPort(AwOmxVdec* impl, OMX_U32 portIdx)
         }
         if (portIdx == kOutputPortIndex && !outDef->bPopulated)
         {
-            //*Return cmdcomplete event if output unpopulated
             impl->m_Callbacks.EventHandler(&impl->base.mOmxComp, impl->m_pAppData,
                                             OMX_EventCmdComplete, OMX_CommandPortDisable,
                                             kOutputPortIndex, NULL);
@@ -466,7 +461,6 @@ static inline void controlStopPort(AwOmxVdec* impl, OMX_U32 portIdx)
         }
         if (portIdx == OMX_ALL && !inDef->bPopulated && !outDef->bPopulated)
         {
-            //*Return cmdcomplete event if inout & output unpopulated
             impl->m_Callbacks.EventHandler(&impl->base.mOmxComp, impl->m_pAppData,
                                             OMX_EventCmdComplete, OMX_CommandPortDisable,
                                             kInputPortIndex, NULL);
@@ -906,7 +900,7 @@ static void doSubmit(AwOmxVdec *impl)
         ret = OmxVdecoderSubmit(impl->pDec, pInBufHdr);
         if(ret != 0)
         {
-            returnPortBuffer(impl->m_InPort);
+            doReturnPortBuffer(impl->m_InPort);
             return ;
         }
     }
@@ -1692,7 +1686,7 @@ static OMX_ERRORTYPE __AwOmxVdecUseBuffer(OMX_IN OMX_HANDLETYPE    hComponent,
     }
     logv("pPortDef[%d]->bEnabled=%d, m_state=%s, can allocate_buffer.",
          (int)nPortIndex, def->bEnabled, OmxState2String(impl->m_state));
-    return AwOmxVdecPortPopBuffer(port, ppBufferHdr, pAppPrivate, nSizeBytes, pBuffer, OMX_FALSE);
+    return AwOmxVdecPortAddBuffer(port, ppBufferHdr, pAppPrivate, nSizeBytes, pBuffer, OMX_FALSE);
 
 }
 
@@ -1713,8 +1707,8 @@ static OMX_ERRORTYPE __AwOmxVdecAllocateBuffer(OMX_IN OMX_HANDLETYPE  hComponent
 
     OMX_PARAM_PORTDEFINITIONTYPE* def = getPortDef(port);
 
-    if (impl->m_state!=OMX_StateLoaded
-        && impl->m_state!=OMX_StateWaitForResources
+    if (impl->m_state != OMX_StateLoaded
+        && impl->m_state != OMX_StateWaitForResources
         && def->bEnabled)
     {
         logw("pPortDef[%d]->bEnabled=%d, m_state=%s, Can't allocate_buffer!",
@@ -1722,9 +1716,8 @@ static OMX_ERRORTYPE __AwOmxVdecAllocateBuffer(OMX_IN OMX_HANDLETYPE  hComponent
         return OMX_ErrorIncorrectStateOperation;
     }
     OMX_U8* pBuffer = OmxVdecoderAllocatePortBuffer(impl->pDec, port, nSizeBytes);
-    return AwOmxVdecPortPopBuffer(port, ppBufferHdr, pAppPrivate, nSizeBytes, pBuffer, OMX_TRUE);
+    return AwOmxVdecPortAddBuffer(port, ppBufferHdr, pAppPrivate, nSizeBytes, pBuffer, OMX_TRUE);
 }
-
 
 static OMX_ERRORTYPE __AwOmxVdecFreeBuffer(OMX_IN  OMX_HANDLETYPE        hComponent,
                                                     OMX_IN  OMX_U32               nPortIndex,
@@ -1737,7 +1730,6 @@ static OMX_ERRORTYPE __AwOmxVdecFreeBuffer(OMX_IN  OMX_HANDLETYPE        hCompon
         return OMX_ErrorBadParameter;
     }
     AwOmxVdec *impl = (AwOmxVdec*)(((OMX_COMPONENTTYPE*)hComponent)->pComponentPrivate);
-
 
     AwOmxVdecPort* port = getPort(impl,nPortIndex);
     if(port == NULL)
@@ -1781,7 +1773,7 @@ static OMX_ERRORTYPE __AwOmxVdecEmptyThisBuffer(OMX_IN OMX_HANDLETYPE hComponent
     if (!def->bEnabled)
         return OMX_ErrorIncorrectStateOperation;
 
-    if (pBufferHdr->nInputPortIndex != 0x0  || pBufferHdr->nOutputPortIndex != OMX_NOPORT)
+    if (pBufferHdr->nInputPortIndex != kInputPortIndex || pBufferHdr->nOutputPortIndex != kInvalidPortIndex)
         return OMX_ErrorBadPortIndex;
 
     if (impl->m_state != OMX_StateExecuting && impl->m_state != OMX_StatePause)
@@ -1803,7 +1795,7 @@ static OMX_ERRORTYPE __AwOmxVdecFillThisBuffer(OMX_IN OMX_HANDLETYPE hComponent,
     if (!def->bEnabled)
         return OMX_ErrorIncorrectStateOperation;
 
-    if (pBufferHdr->nOutputPortIndex != 0x1 || pBufferHdr->nInputPortIndex != OMX_NOPORT)
+    if (pBufferHdr->nOutputPortIndex != kOutputPortIndex || pBufferHdr->nInputPortIndex != kInvalidPortIndex)
         return OMX_ErrorBadPortIndex;
 
     if (impl->m_state != OMX_StateExecuting && impl->m_state != OMX_StatePause)

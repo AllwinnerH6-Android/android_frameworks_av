@@ -97,6 +97,8 @@ typedef struct _AllwinnerAudioItf
 #else
     void (*SetRawPlayParam)(AudioDecoder* pDecoder,void *self,int flag);
 #endif
+
+    int (*CheckAudioDecoder)(AudioDecoder* pDecoder);
 }AllwinnerAudioItf;
 
 typedef struct _alib_func_map{
@@ -124,7 +126,8 @@ const alib_func_map ALIB_FUNCS[]={
     {"DecodeAudioStream", CdxOffsetof(AllwinnerAudioItf, DecodeAudioStream)},
     {"DestroyAudioDecoder", CdxOffsetof(AllwinnerAudioItf, DestroyAudioDecoder)},
     {"CreateAudioDecoder", CdxOffsetof(AllwinnerAudioItf, CreateAudioDecoder)},
-    {"SetRawPlayParam", CdxOffsetof(AllwinnerAudioItf, SetRawPlayParam)}
+    {"SetRawPlayParam", CdxOffsetof(AllwinnerAudioItf, SetRawPlayParam)},
+    {"CheckAudioDecoder", CdxOffsetof(AllwinnerAudioItf, CheckAudioDecoder)}
 };
 
 const int ALIB_FUNC_NUM = sizeof(ALIB_FUNCS)/sizeof(ALIB_FUNCS[0]);
@@ -223,10 +226,10 @@ AudioDecComp* AudioDecCompCreate(void)
         idx++;
     }
 
-    if((&p->AlibItf.SetRawPlayParam) != dst)
+    if((&p->AlibItf.CheckAudioDecoder) != dst)
     {
-        loge("SetRawPlayParam(%p) compare to last offset begin from &p->AlibItf(%p) is different!",
-            &p->AlibItf.SetRawPlayParam, dst);
+        loge("CheckAudioDecoder(%p) compare to last offset begin from &p->AlibItf(%p) is different!",
+            &p->AlibItf.CheckAudioDecoder, dst);
         err = -1;
     }
 
@@ -1062,6 +1065,19 @@ static void handleStart(AwMessage *msg, void *arg)
         return;
     }
     logd("Create libadecoder success...");
+    if(p->AlibItf.CheckAudioDecoder == NULL ||
+        p->AlibItf.CheckAudioDecoder(p->AlibItf.libadecoder) < 0)
+    {
+        loge("check audio decoder fail.");
+        pthread_mutex_unlock(&p->decoderDestroyMutex);
+        p->bCrashFlag = 1;
+        p->callback(p->pUserData, PLAYER_AUDIO_DECODER_NOTIFY_CRASH, NULL);
+        if (msg->result)
+            *msg->result = -1;
+        sem_post(msg->replySem);
+        return;
+    }
+
     memset(&p->bsInfo, 0, sizeof(BsInFor));
     if (p->AlibItf.InitializeAudioDecoder(p->AlibItf.libadecoder,
                               &p->pStreamInfoArr[p->nStreamSelected],

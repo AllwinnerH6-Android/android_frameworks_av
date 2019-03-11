@@ -195,7 +195,9 @@ enum media_player_invoke_ids {
     INVOKE_ID_SELECT_TRACK = 4,
     INVOKE_ID_UNSELECT_TRACK = 5,
     INVOKE_ID_SET_VIDEO_SCALING_MODE = 6,
-    INVOKE_ID_GET_SELECTED_TRACK = 7
+    INVOKE_ID_GET_SELECTED_TRACK = 7,
+    // Keep INVOKE_ID_PLAYREADY_DRM in sync with playready apk
+    INVOKE_ID_PLAYREADY_DRM = 9900
 };
 
 // ----------------------------------------------------------------------------

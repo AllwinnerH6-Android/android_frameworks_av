@@ -4,9 +4,17 @@ include $(CLEAR_VARS)
 
 CEDARX_ROOT=$(LOCAL_PATH)/../../../
 include $(CEDARX_ROOT)/config.mk
-
+# we convert BOARD_USE_PLAYREADY to BOARD_USE_PLAYREADY_ENV since android p
+# it can be work on old android version
+BOARD_USE_PLAYREADY_ENV := 0
 ifeq ($(BOARD_USE_PLAYREADY), 1)
+BOARD_USE_PLAYREADY_ENV := 1
+ifeq ($(CONF_ANDROID_VERSION), 9)
+BOARD_USE_PLAYREADY_ENV := 0
+endif
+endif
 
+ifeq ($(BOARD_USE_PLAYREADY_ENV), 1)
 LOCAL_SRC_FILES = \
                 $(notdir $(wildcard $(LOCAL_PATH)/*.c)) \
                 ../asf/AsfParser.c \

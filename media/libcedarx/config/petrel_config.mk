@@ -118,7 +118,7 @@ endif
 ##---------------------------------------------------------------------------##
 
 ##--: afbc enable
-LOCAL_CFLAGS += -DCONF_AFBC_ENABLE
+#LOCAL_CFLAGS += -DCONF_AFBC_ENABLE
 ##---------------------------------------------------------------------------##
 
 ##---: sound control write data with async mode
@@ -129,5 +129,8 @@ LOCAL_CFLAGS += -DCONF_AFBC_ENABLE
 LOCAL_CFLAGS += -DCONF_HIGH_DYNAMIC_RANGE_ENABLE
 ##---------------------------------------------------------------------------##
 
+##---: if support scale down
+LOCAL_CFLAGS += -DCONF_SCALE_DOWN
+##---------------------------------------------------------------------------##
 
 ###################################end define####################################

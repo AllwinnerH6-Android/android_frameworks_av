@@ -136,13 +136,13 @@ void doEmptyThisBuffer(AwOmxVdecPort* mPort, OMX_BUFFERHEADERTYPE* pBufferHeader
 void doFillThisBuffer(AwOmxVdecPort* mPort, OMX_BUFFERHEADERTYPE* pBufferHeader);
 void doFlushPortBuffer(AwOmxVdecPort* mPort);
 void doSetPortMarkBuffer(AwOmxVdecPort* mPort, OMX_MARKTYPE* pMarkBuf);
-void returnPortBuffer(AwOmxVdecPort* mPort);
+void doReturnPortBuffer(AwOmxVdecPort* mPort);
 OMX_BUFFERHEADERTYPE* doRequestPortBuffer(AwOmxVdecPort* mPort);
 
-OMX_ERRORTYPE AwOmxVdecInPortInit(AwOmxVdecPort* m_InPort, OMX_VIDEO_CODINGTYPE type,
+OMX_ERRORTYPE AwOmxVdecInPortInit(AwOmxVdecPort* pInPort, OMX_VIDEO_CODINGTYPE type,
                 OMX_BOOL bIsSecureVideoFlag);
-OMX_ERRORTYPE AwOmxVdecOutPortInit(AwOmxVdecPort* mPort, OMX_BOOL bIsSecureVideoFlag);
-OMX_ERRORTYPE AwOmxVdecPortDeinit(AwOmxVdecPort* m_InPort);
+OMX_ERRORTYPE AwOmxVdecOutPortInit(AwOmxVdecPort* pOutPort, OMX_BOOL bIsSecureVideoFlag);
+OMX_ERRORTYPE AwOmxVdecPortDeinit(AwOmxVdecPort* mPort);
 OMX_ERRORTYPE AwOmxVdecPortGetDefinitioin(AwOmxVdecPort* mPort,
                                                    OMX_PARAM_PORTDEFINITIONTYPE *value);
 OMX_ERRORTYPE AwOmxVdecPortSetDefinitioin(AwOmxVdecPort* mPort,
@@ -163,7 +163,7 @@ OMX_ERRORTYPE AwOmxVdecPortSetBufferSupplier(AwOmxVdecPort* mPort,
 OMX_ERRORTYPE AwOmxVdecPortGetProfileLevel(AwOmxVdecPort* mPort,
                                                      OMX_VIDEO_PARAM_PROFILELEVELTYPE *value);
 
-OMX_ERRORTYPE AwOmxVdecPortPopBuffer(AwOmxVdecPort* mPort,
+OMX_ERRORTYPE AwOmxVdecPortAddBuffer(AwOmxVdecPort* mPort,
                                         OMX_INOUT OMX_BUFFERHEADERTYPE** ppBufferHdr,
                                         OMX_IN    OMX_PTR                pAppPrivate,
                                         OMX_IN    OMX_U32                nSizeBytes,

@@ -521,10 +521,18 @@ void getAndAddInputBuffer(AwOmxVenc* impl, OMX_BUFFERHEADERTYPE* pInBufHdr,
         // only support ARGB now
         sInputBuffer->pAddrPhyY =
                       (unsigned char *)phyaddress;
+#ifdef CONF_PIE_AND_NEWER
+        sInputBuffer->pAddrPhyC =
+            sInputBuffer->pAddrPhyY +
+            ALIGN_16B(impl->m_sInPortDefType.format.video.nStride) *
+            (impl->m_sInPortDefType.format.video.nFrameHeight);
+#else
         sInputBuffer->pAddrPhyC =
             sInputBuffer->pAddrPhyY +
             ALIGN_16B(impl->m_sInPortDefType.format.video.nStride) *
             ALIGN_16B(impl->m_sInPortDefType.format.video.nFrameHeight);
+#endif
+
 
     }
     else

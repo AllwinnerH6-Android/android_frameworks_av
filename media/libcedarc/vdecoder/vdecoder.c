@@ -60,7 +60,7 @@ static FILE* fpStream = NULL;
 //* setup the ve freq
 
 #ifdef CONF_VE_FREQ_ENABLE_SETUP
-#define VE_FREQ_SETTING_VALUE (696) //* just for h265 on h6
+#define VE_FREQ_SETTING_VALUE (648) //* just for h265 on h6
 #endif
 
 //* for check the proc info

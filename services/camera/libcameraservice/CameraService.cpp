@@ -438,13 +438,6 @@ Status CameraService::getNumberOfCameras(int32_t type, int32_t* numCameras) {
                                      normalNumCameras,
                                      *numCameras,
                                      mCameraProviderManager->getNumberOfCameras());
-
-            //Release mDevices for hot plug-out.mDevices means the class of deviceinfo.
-            {
-                Mutex::Autolock lock(mCameraStatesLock);
-                mCameraStates.clear();
-            }
-
                 mNumberOfCameras = *numCameras;
                 normalNumCameras = mNumberOfCameras;
 

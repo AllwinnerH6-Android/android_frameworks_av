@@ -152,7 +152,7 @@ OMX_BUFFERHEADERTYPE* doRequestPortBuffer(AwOmxVdecPort* mPort)
 
 }
 
-void returnPortBuffer(AwOmxVdecPort* mPort)
+void doReturnPortBuffer(AwOmxVdecPort* mPort)
 {
     OmxAcquireMutex(mPort->m_bufMutex);
     mPort->m_sBufList.nSizeOfList++;
@@ -366,7 +366,7 @@ OMX_ERRORTYPE AwOmxVdecPortGetProfileLevel(AwOmxVdecPort* mPort,
     return eError;
 }
 
-OMX_ERRORTYPE AwOmxVdecPortPopBuffer(AwOmxVdecPort* mPort,
+OMX_ERRORTYPE AwOmxVdecPortAddBuffer(AwOmxVdecPort* mPort,
                                         OMX_INOUT OMX_BUFFERHEADERTYPE** ppBufferHdr,
                                         OMX_IN    OMX_PTR                pAppPrivate,
                                         OMX_IN    OMX_U32                nSizeBytes,
@@ -374,7 +374,7 @@ OMX_ERRORTYPE AwOmxVdecPortPopBuffer(AwOmxVdecPort* mPort,
                                         OMX_IN    OMX_BOOL               bAllocBySelfFlags)
 {
     OMX_S8 nIndex = 0x0;
-    logd("*******port pop buffer:%s", isInputPort(mPort)?"<<<<<<<<in":">>>>>>>out");
+    logd("%s port add buffer: %p", isInputPort(mPort)?"<<<<<<<<in":">>>>>>>out", pBuffer);
 
     OmxAcquireMutex(mPort->m_bufMutex);
     if(nSizeBytes != mPort->m_sPortDefType.nBufferSize || mPort->m_sPortDefType.bPopulated)
@@ -497,7 +497,7 @@ OMX_ERRORTYPE AwOmxVdecInPortInit(AwOmxVdecPort* pInPort, OMX_VIDEO_CODINGTYPE t
     pInPort->m_sPortDefType.format.video.eCompressionFormat = type;
     pInPort->m_sPortDefType.format.video.cMIMEType          = (OMX_STRING)"";
 
-    if(bIsSecureVideoFlag == OMX_TRUE)
+    if(bIsSecureVideoFlag)
     {
         pInPort->m_sPortDefType.nBufferCountMin    = NUM_IN_BUFFERS_SECURE;
         pInPort->m_sPortDefType.nBufferCountActual = NUM_IN_BUFFERS_SECURE;
@@ -584,7 +584,7 @@ OMX_ERRORTYPE AwOmxVdecOutPortInit(AwOmxVdecPort* pOutPort, OMX_BOOL bIsSecureVi
 
     pOutPort->m_sPortDefType.format.video.eColorFormat = COLOR_FORMAT_DEFAULT;
 
-    if(bIsSecureVideoFlag == OMX_TRUE)
+    if(bIsSecureVideoFlag)
     {
         pOutPort->m_sPortDefType.nBufferCountMin      = MAX_NUM_OUT_BUFFERS_SECURE;
         pOutPort->m_sPortDefType.nBufferCountActual   = MAX_NUM_OUT_BUFFERS_SECURE;

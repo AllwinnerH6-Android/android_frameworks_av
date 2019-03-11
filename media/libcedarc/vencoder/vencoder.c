@@ -666,7 +666,7 @@ int AWJpecEnc(JpegEncInfo* pJpegInfo, EXIFInfo* pExifInfo, void* pOutBuffer, int
             VideoEncoderGetVeIommuAddr(pVideoEnc, &iommu_buffer);
             inputBuffer.pAddrPhyY = (unsigned char*)(uintptr_t)iommu_buffer.iommu_addr;
             inputBuffer.pAddrPhyC = inputBuffer.pAddrPhyY +
-                pJpegInfo->sBaseInfo.nStride * ((pJpegInfo->sBaseInfo.nInputHeight + 15) & (~15));
+                pJpegInfo->sBaseInfo.nStride * (pJpegInfo->sBaseInfo.nInputHeight);
         }
         else
         {

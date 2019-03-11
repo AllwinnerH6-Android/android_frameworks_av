@@ -305,7 +305,7 @@ static OMX_U32 anGetStreamFormat(OMX_VIDEO_CODINGTYPE videoCoding)
     return VIDEO_CODEC_FORMAT_UNKNOWN;
 }
 
-void anGetStremInfo(OmxAwDecoderContext *pCtx)
+void anGetStreamInfo(OmxAwDecoderContext *pCtx)
 {
     OMX_PARAM_PORTDEFINITIONTYPE* inDef = getPortDef(pCtx->pInPort);
     OMX_VIDEO_PARAM_PORTFORMATTYPE* inFormatType = \
@@ -382,10 +382,10 @@ static int anDealWithInitData(OmxAwDecoderContext *pCtx)
         }
         else
         {
-            pCtx->mStreamInfo.pCodecSpecificData      = NULL;
+            pCtx->mStreamInfo.pCodecSpecificData    = NULL;
             pCtx->mStreamInfo.nCodecSpecificDataLen = 0;
         }
-        returnPortBuffer(pCtx->pInPort);
+        doReturnPortBuffer(pCtx->pInPort);
         return 0;
     }
     return -1;
@@ -448,16 +448,13 @@ static int anGetVideoFbmBufInfo(OmxAwDecoderContext *pCtx)
 
         OMX_U32 nCurExtendFlag = 0;
 
-        #ifdef CONF_SURPPORT_METADATA_BUFFER
         if(pFbmBufInfo->b10bitVideoFlag == 1)
             nCurExtendFlag |= AW_VIDEO_10BIT_FLAG;
-
         if(pFbmBufInfo->bAfbcModeFlag == 1)
             nCurExtendFlag |= AW_VIDEO_AFBC_FLAG;
-
         if(pFbmBufInfo->bHdrVideoFlag == 1)
             nCurExtendFlag |= AW_VIDEO_HDR_FLAG;
-        #endif
+
 
         logd("**** nExtendFlag = %lx", nCurExtendFlag);
         OMX_PARAM_PORTDEFINITIONTYPE* inDef  = getPortDef(pCtx->pInPort);
@@ -470,9 +467,15 @@ static int anGetVideoFbmBufInfo(OmxAwDecoderContext *pCtx)
         if(outDef->nBufferCountActual >= (OMX_U32)pFbmBufInfo->nBufNum)
             bBufferNumMatchFlag = OMX_TRUE;
         logd("*** bBufferNumMatchFlag = %d",bBufferNumMatchFlag);
+        OMX_BOOL bFormatMatchFlag = OMX_FALSE;
+        if(pCtx->mVideoConfig.eOutputPixelFormat == pFbmBufInfo->ePixelFormat &&
+            pFbmBufInfo->b10bitVideoFlag == 0)
+        {
+            bFormatMatchFlag = OMX_TRUE;
+        }
         OMX_U32 nInitWidht  =  outDef->format.video.nFrameWidth;
         OMX_U32 nInitHeight =  outDef->format.video.nFrameHeight;
-        if(bBufferNumMatchFlag
+        if(bBufferNumMatchFlag && bFormatMatchFlag
             && nInitWidht  == (OMX_U32)pFbmBufInfo->nBufWidth
             && nInitHeight == (OMX_U32)pFbmBufInfo->nBufHeight
             && nCurExtendFlag == pCtx->nExtendFlag)
@@ -506,6 +509,7 @@ static int anGetVideoFbmBufInfo(OmxAwDecoderContext *pCtx)
         outDef->format.video.nFrameHeight = pFbmBufInfo->nBufHeight;
         outDef->nBufferSize = pFbmBufInfo->nBufWidth*pFbmBufInfo->nBufHeight*3/2;
         pCtx->nExtendFlag = nCurExtendFlag;
+        pCtx->mVideoConfig.eOutputPixelFormat = pFbmBufInfo->ePixelFormat;
 
         pCtx->mVideoRect.nLeft   = pFbmBufInfo->nLeftOffset;
         pCtx->mVideoRect.nTop    = pFbmBufInfo->nTopOffset;
@@ -581,7 +585,7 @@ static int getVirAddrOfMetadataBuffer(OmxAwDecoderContext *pCtx,
     unsigned char* nViraddress = 0;
     int nVirsize = 0;
 
-#ifdef CONF_SURPPORT_METADATA_BUFFER
+#if (defined(CONF_HIGH_DYNAMIC_RANGE_ENABLE) || defined(CONF_AFBC_ENABLE))
     int ret = 0;
     private_handle_t* hnd = (private_handle_t *)(buffer_handle);
     if(hnd != NULL)
@@ -634,7 +638,7 @@ static void setIonMetadataFlag(OmxAwDecoderContext *pCtx,
                                     buffer_handle_t buffer_handle)
 {
 
-#ifdef CONF_SURPPORT_METADATA_BUFFER
+#if (defined(CONF_HIGH_DYNAMIC_RANGE_ENABLE) || defined(CONF_AFBC_ENABLE))
     private_handle_t* hnd = (private_handle_t *)(buffer_handle);
     hnd->ion_metadata_flag = 0;
 
@@ -870,10 +874,22 @@ static int requestOutputBuffer(OmxAwDecoderContext *pCtx,
     //* set the buffer address
     mYsize = outDef->format.video.nFrameWidth * outDef->format.video.nFrameHeight;
     pPicBufInfo->pData0      = pCtx->mOutputBufferInfoArr[i].pBufVirAddr;
-    pPicBufInfo->pData1      = pPicBufInfo->pData0 + mYsize;
     pPicBufInfo->phyYBufAddr = \
         (uintptr_t)pCtx->mOutputBufferInfoArr[i].pBufPhyAddr;
-    pPicBufInfo->phyCBufAddr = pPicBufInfo->phyYBufAddr + mYsize;
+
+    if(pCtx->nActualColorFormat == PIXEL_FORMAT_P010_UV ||
+       pCtx->nActualColorFormat == PIXEL_FORMAT_P010_VU)
+    {
+        pPicBufInfo->pData1       = pPicBufInfo->pData0 + mYsize*2;
+        pPicBufInfo->pData2       = pPicBufInfo->pData1 + mYsize/2;
+        pPicBufInfo->phyCBufAddr  = pPicBufInfo->phyYBufAddr + mYsize*2;
+    }
+    else
+    {
+        pPicBufInfo->pData1      = pPicBufInfo->pData0 + mYsize;
+        pPicBufInfo->phyCBufAddr = pPicBufInfo->phyYBufAddr + mYsize;
+    }
+
     pPicBufInfo->nBufId      = i;
     pPicBufInfo->pPrivate    = \
         (void*)(uintptr_t)pCtx->mOutputBufferInfoArr[i].handle_ion;
@@ -954,7 +970,7 @@ static int returnInitBuffer(OmxAwDecoderContext *pCtx,
             {
                 pVideoPicture = SetVideoFbmBufAddress(pCtx->m_decoder,
                                                       &mVideoPicture, nForbiddenUseFlag);
-                logd("*** call SetVideoFbmBufAddress: pVideoPicture(%p), bufFd: %d", pVideoPicture, pVideoPicture->nBufFd);
+                logv("*** call SetVideoFbmBufAddress: pVideoPicture(%p), bufFd: %d", pVideoPicture, pVideoPicture->nBufFd);
 
                 if(nAsDiOutBufferFlag == 1)
                 {
@@ -1396,7 +1412,7 @@ static void adapteColorAspects(ColorAspects* aspects,
             break;
         }
     }
-    switch(mPrimaries)
+    switch(mPrimaries)//from ffmpeg
     {
         case 1:
             aspects->mPrimaries = ColorAspects::PrimariesBT709_5;//*1
@@ -1835,7 +1851,7 @@ static int freeVirAddrOfMetadataBuffer(int mIonFd,
                                 void* viraddress)
 {
 
-#ifdef CONF_SURPPORT_METADATA_BUFFER
+#if (defined(CONF_HIGH_DYNAMIC_RANGE_ENABLE) || defined(CONF_AFBC_ENABLE))
     if (viraddress != 0) {
         munmap(viraddress, virsize);
     }
@@ -2119,6 +2135,7 @@ static OMX_ERRORTYPE __anGetExtConfig(OmxDecoder* pDec,
     OmxAwDecoderContext *pCtx = (OmxAwDecoderContext*)pDec;
     switch(eConfigIndex)
     {
+#ifdef CONF_PIE_AND_NEWER
         case AWOMX_IndexParamVideoDescribeColorAspects:
         {
             DescribeColorAspectsParams* colorAspectsParams =
@@ -2155,6 +2172,7 @@ static OMX_ERRORTYPE __anGetExtConfig(OmxDecoder* pDec,
             hdrStaticInfoParams->sInfo = pCtx->mHdrStaticInfo;
             break;
         }
+#endif
         default:
         {
             logd("get_config: unknown param %d\n",eConfigIndex);
@@ -2174,6 +2192,7 @@ static OMX_ERRORTYPE __anSetExtConfig(OmxDecoder* pDec,
     OmxAwDecoderContext *pCtx = (OmxAwDecoderContext*)pDec;
     switch(eConfigIndex)
     {
+#ifdef CONF_PIE_AND_NEWER
         case AWOMX_IndexParamVideoDescribeColorAspects:
         {
             const DescribeColorAspectsParams* colorAspectsParams =
@@ -2205,6 +2224,7 @@ static OMX_ERRORTYPE __anSetExtConfig(OmxDecoder* pDec,
             //updatePortDefinitions(false);
             break;
         }
+#endif
         default:
         {
             logd("get_config: unknown param %d\n",eConfigIndex);
@@ -2230,7 +2250,7 @@ static int __anPrepare(OmxDecoder* pDec)
     }
 
     logd("Prepare decoder begin!");
-    anGetStremInfo(pCtx);
+    anGetStreamInfo(pCtx);
     OmxAcquireMutex(pCtx->awMutexHandler);
     //*if mdecoder had closed before, we should create it
     if(pCtx->m_decoder==NULL)
@@ -2253,16 +2273,12 @@ static int __anPrepare(OmxDecoder* pDec)
     pCtx->mVideoConfig.bGpuBufValid = 0;
 #endif
 
-
     pCtx->mVideoConfig.nAlignStride = pCtx->mGpuAlignStride;
-
-    pCtx->mVideoConfig.eOutputPixelFormat = PIXEL_FORMAT_YV12;//* Used to be YV12.
-
 
     //pCtx->mVideoConfig.bCalledByOmxFlag   = 1;
 
-#ifdef CONF_SURPPORT_METADATA_BUFFER
-    pCtx->mVideoConfig.eCtlAfbcMode       = ENABLE_AFBC_JUST_BIG_SIZE;
+#ifdef CONF_AFBC_ENABLE
+    pCtx->mVideoConfig.eCtlAfbcMode = ENABLE_AFBC_JUST_BIG_SIZE;
 #endif
 
 #if (ENABLE_SCALEDOWN_WHEN_RESOLUTION_MOER_THAN_1080P)
@@ -2744,20 +2760,50 @@ static void __anUpdateFormat(OmxDecoder* pDec)
     OmxAwDecoderContext *pCtx = (OmxAwDecoderContext*)pDec;
     if(pCtx->bUseAndroidBuffer)
     {
-        OMX_U32 color = HAL_PIXEL_FORMAT_YV12;
-        if(PIXEL_FORMAT_YV12 == pCtx->nActualColorFormat)
+        OMX_U32 color;
+        switch(pCtx->nActualColorFormat)
         {
-            color = HAL_PIXEL_FORMAT_YV12;
+            case PIXEL_FORMAT_YV12:
+            {
+                color = HAL_PIXEL_FORMAT_YV12;
+                if(pCtx->nExtendFlag & AW_VIDEO_10BIT_FLAG)
+                    color = HAL_PIXEL_FORMAT_AW_YV12_10bit;
+                break;
+            }
+            case PIXEL_FORMAT_NV21:
+            {
+                color = HAL_PIXEL_FORMAT_YCrCb_420_SP;
+                if(pCtx->nExtendFlag & AW_VIDEO_10BIT_FLAG)
+                    color = HAL_PIXEL_FORMAT_AW_NV21_10bit;
+                break;
+            }
+            case PIXEL_FORMAT_NV12:
+            {
+                color = HAL_PIXEL_FORMAT_AW_NV12;
+                if(pCtx->nExtendFlag & AW_VIDEO_10BIT_FLAG)
+                    color = HAL_PIXEL_FORMAT_AW_NV12_10bit;
+                break;
+            }
+            case PIXEL_FORMAT_P010_UV:
+            {
+                color = HAL_PIXEL_FORMAT_AW_P010_UV;
+                break;
+            }
+            case PIXEL_FORMAT_P010_VU:
+            {
+                color = HAL_PIXEL_FORMAT_AW_P010_VU;
+                break;
+            }
+            default:
+            {
+                //*it will init the pixelformat when omx start,
+                //*here you can change the format to init the decoder and gpu.
+                pCtx->mVideoConfig.eOutputPixelFormat = PIXEL_FORMAT_YV12;//* Used to be YV12.
+                color = HAL_PIXEL_FORMAT_YV12;
+                break;
+            }
         }
-        else if(PIXEL_FORMAT_NV21 == pCtx->nActualColorFormat)
-        {
-            color = HAL_PIXEL_FORMAT_YCrCb_420_SP;
-        }
-        if(pCtx->nExtendFlag & AW_VIDEO_10BIT_FLAG)
-        {
-            color = HAL_PIXEL_FORMAT_AW_YV12_10bit;
-        }
-        //logd("gqy*****acutalcolor:%lx, update:%lx", pCtx->nActualColorFormat, color);
+        logv("gqy*****acutalcolor:%lx, update:%lx", pCtx->nActualColorFormat, color);
         setPortColorFormat(pCtx->pOutPort, color);
     }
 }
@@ -2896,7 +2942,7 @@ OmxDecoder* OmxDecoderCreate(AwOmxVdecPort* in, AwOmxVdecPort* out, OMX_BOOL bIs
     pCtx->mSemInData    = OmxCreateSem("InDataSem",    0, 0, OMX_FALSE);
     pCtx->mSemOutBuffer = OmxCreateSem("OutBufferSem", 0, 0, OMX_FALSE);
     pCtx->mSemValidPic  = OmxCreateSem("ValidPicSem",  0, 0, OMX_FALSE);
-    pCtx->bUseZeroCopyBuffer = OMX_TRUE;
+
     pCtx->mIonFd = -1;
     pCtx->mIonFd = ion_open();
     logd("ion open fd = %d",pCtx->mIonFd);

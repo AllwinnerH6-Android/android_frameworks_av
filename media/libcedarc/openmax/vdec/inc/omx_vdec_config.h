@@ -52,7 +52,7 @@
 
 #define OMX_SPEC_VERSION                      0x00000101
 
-#define OMX_NOPORT                            0xFFFFFFFE
+//#define OMX_NOPORT                            0xFFFFFFFE
 
 #define NUM_IN_BUFFERS                        2              // Input Buffers
 #define NUM_IN_BUFFERS_SECURE                 1              // Input Buffers(secure)

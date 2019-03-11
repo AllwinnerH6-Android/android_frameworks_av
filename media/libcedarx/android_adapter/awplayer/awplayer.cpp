@@ -74,7 +74,7 @@
 
 static const char *WASU_APP_NAME = "net.sunniwell.app.ott.chinamobile";
 static const char *CMCC_LOCAL_APP_NAME = "net.sunniwell.app.swplayer";
-#if defined(CONF_AFBC_ENABLE)
+#if defined(CONF_SCALE_DOWN)
 static const char *TVD_FILE_MANAGER_APP_NAME = "com.softwinner.TvdFileManager";
 #endif
 // static const char *MANGGUO_APP_NAME = "com.starcor.hunan";
@@ -467,7 +467,7 @@ status_t AwPlayer::setDataSource(int fd, int64_t offset, int64_t length)
 
     if (!strcmp(mPriData->strApkName, CMCC_LOCAL_APP_NAME))
         mPriData->mConfigInfo.appType = APP_CMCC_LOCAL;
-#if defined(CONF_AFBC_ENABLE)
+#if defined(CONF_SCALE_DOWN)
     else if (!strcmp(mPriData->strApkName, TVD_FILE_MANAGER_APP_NAME))
     {
         //tvd_file_manager need scaledown afbc video
@@ -498,16 +498,18 @@ status_t AwPlayer::setDataSource(const sp<IStreamSource> &source)
         bufferSize = 32*1024;
         suffix = ".awts";
     }
-    else if(!strcmp(mPriData->strApkName, "com.softwinner.miracastReceiver"))
+    else if(!strcmp(mPriData->strApkName, "com.softwinner.miracastReceiver")
+        || !strcmp(mPriData->strApkName, "com.xiaomi.mitv.smartshare"))
     {
-        numBuffer = 1024;
-        bufferSize = 188*8;
+        numBuffer = 256;
+        bufferSize = 4*1024;
         suffix = ".ts";
+        CDX_LOGD("this type is %s",mPriData->strApkName);
     }
     else
     {
-        CDX_LOGW("this type is unknown.");
-        numBuffer = 16;
+        CDX_LOGW("this type is unknown. %s",mPriData->strApkName);
+        numBuffer = 256;
         bufferSize = 4*1024;
     }
     CdxStreamT *stream = StreamingSourceOpen(source, numBuffer, bufferSize);

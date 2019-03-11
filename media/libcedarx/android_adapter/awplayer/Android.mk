@@ -56,9 +56,21 @@ else
 LOCAL_C_INCLUDES += $(TOP)/external/icu4c/common
 endif
 
+##########################PLAYREADY BEGIN####################################
+#$(warning BOARD_USE_PLAYREADY=$(BOARD_USE_PLAYREADY))
+#$(warning CONF_ANDROID_VERSION=$(CONF_ANDROID_VERSION))
+#$(warning PLAYREADY_DEBUG=$(PLAYREADY_DEBUG))
+#$(warning BOARD_USE_PLAYREADY_LICENSE=$(BOARD_USE_PLAYREADY_LICENSE))
 ifeq ($(BOARD_USE_PLAYREADY), 1)
 LOCAL_SRC_FILES += \
         awPlayReadyLicense.cpp
+ifeq ($(CONF_ANDROID_VERSION), 9)
+# we convert BOARD_USE_PLAYREADY to BOARD_USE_PLAYREADY_LICENSE since android p.
+# if any question, please email to me: jilinglin@allwinnertech.com
+LOCAL_CFLAGS += -DBOARD_USE_PLAYREADY_LICENSE=${BOARD_USE_PLAYREADY_LICENSE}
+
+else#CONF_ANDROID_VERSION
+LOCAL_SHARED_LIBRARIES += libplayreadypk
 ifeq ($(PLAYREADY_DEBUG), 1)
 PLAYREADY_DIR:= $(TOP)/hardware/aw/playready
 include $(PLAYREADY_DIR)/config.mk
@@ -70,7 +82,7 @@ LOCAL_C_INCLUDES +=                                 \
         $(PLAYREADY_DIR)/source/results             \
         $(PLAYREADY_DIR)/source/tools/shared/common \
         $(PLAYREADY_DIR)/source/tools/shared/netio
-else
+else#PLAYREADY_DEBUG
 include $(TOP)/hardware/aw/playready/config.mk
 LOCAL_CFLAGS += $(PLAYREADY_CFLAGS)
 LOCAL_C_INCLUDES +=                                              \
@@ -80,14 +92,15 @@ LOCAL_C_INCLUDES +=                                              \
         $(TOP)/hardware/aw/playready/include/results             \
         $(TOP)/hardware/aw/playready/include/tools/shared/common \
         $(TOP)/hardware/aw/playready/include/tools/shared/netio
-endif
-LOCAL_SHARED_LIBRARIES += libplayreadypk
-LOCAL_CFLAGS += -DBOARD_USE_PLAYREADY=${BOARD_USE_PLAYREADY}
+endif#PLAYREADY_DEBUG
+LOCAL_CFLAGS += -DBOARD_USE_PLAYREADY_LICENSE=1
 LOCAL_CFLAGS += -DBOARD_PLAYREADY_USE_SECUREOS=${BOARD_PLAYREADY_USE_SECUREOS}
-else
-LOCAL_CFLAGS += -DBOARD_USE_PLAYREADY=0
+endif#CONF_ANDROID_VERSION
+else#BOARD_USE_PLAYREADY
+LOCAL_CFLAGS += -DBOARD_USE_PLAYREADY_LICENSE=0
 LOCAL_CFLAGS += -DBOARD_PLAYREADY_USE_SECUREOS=0
 endif
+##########################PLAYREADY END######################################
 
 LOCAL_MODULE_TAGS := optional
 

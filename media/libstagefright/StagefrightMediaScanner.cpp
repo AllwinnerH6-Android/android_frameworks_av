@@ -37,11 +37,13 @@ StagefrightMediaScanner::~StagefrightMediaScanner() {}
 static bool FileHasAcceptableExtension(const char *extension) {
     static const char *kValidExtensions[] = {
         ".mp3", ".mp4", ".m4a", ".3gp", ".3gpp", ".3g2", ".3gpp2",
-        ".mpeg", ".ogg", ".mid", ".smf", ".imy", ".wma", ".aac",
+        ".mpeg", ".ogg", ".mid", ".smf", ".imy", ".aac",
         ".wav", ".amr", ".midi", ".xmf", ".rtttl", ".rtx", ".ota",
         ".mkv", ".mka", ".webm", ".ts", ".fl", ".flac", ".mxmf",
-        ".avi", ".mpeg", ".mpg", ".awb", ".mpga", ".mov",
-        ".m4v", ".oga"
+        ".avi", ".mpeg", ".mpg", ".awb", ".mpga",
+        ".mov", ".flv", ".f4v", ".mp1", ".mp2",
+        ".oga", ".ape", ".omg", ".oma", ".m4v", ".wmv", ".asf",
+        ".vob", ".pmp", ".m4r", ".m2ts"
     };
     static const size_t kNumValidExtensions =
         sizeof(kValidExtensions) / sizeof(kValidExtensions[0]);

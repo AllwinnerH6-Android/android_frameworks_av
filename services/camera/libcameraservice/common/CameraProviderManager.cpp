@@ -642,14 +642,6 @@ int8_t CameraProviderManager::ProviderInfo::getNumberOfCameras()  {
         }
     }
 
-    //Changed by function addDevice.
-    for (auto& device : mDevices) {
-        mUniqueCameraIds.insert(device->mId);
-        if (device->isAPI1Compatible()) {
-            //mUniqueAPI1CompatibleCameraIds.push_back(device->mId);
-        }
-    }
-
     mUniqueDeviceCount = mUniqueCameraIds.size();
 
     ALOGV("%s: Camera provider %s ready with %zu camera devices,the return value numCameras is %d.",

@@ -25,6 +25,11 @@ LOCAL_CFLAGS += -DCONF_KERN_BITWIDE=64
 ## 7. DI process 3 input pictures. Otherwise, 2 input pictures would be processed anyway.
 LOCAL_CFLAGS += -DCONF_DI_PROCESS_3_PICTURE
 
-## 8. for the function of hdr and afbc
-LOCAL_CFLAGS += -DCONF_SURPPORT_METADATA_BUFFER
+## 8. for enable afbc
+#LOCAL_CFLAGS += -DCONF_AFBC_ENABLE
 
+## 9. for the function of VE frequency setup
+LOCAL_CFLAGS += -DCONF_VE_FREQ_ENABLE_SETUP
+
+##10. for 10bit and hdr
+LOCAL_CFLAGS += -DCONF_HIGH_DYNAMIC_RANGE_ENABLE

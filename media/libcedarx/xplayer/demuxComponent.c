@@ -1954,18 +1954,22 @@ __prepareBegin:
 
             //* if the parser is wvm , we should not start cache thread,
             //* because wvm need secure buffer.
-            if(demux->bFileStream == 0 && demux->pParser->type != CDX_PARSER_WVM )
+            if(demux->bFileStream == 0 && demux->pParser->type != CDX_PARSER_WVM)
             {
-                if(pthread_create(&demux->cacheThreadId, NULL, CacheThread, (void*)demux) == 0
-                    && !(demux->mediaInfo.pVideoStreamInfo->bSecureStreamFlag))
+                if((demux->mediaInfo.nVideoStreamNum > 0 &&
+                    demux->mediaInfo.pVideoStreamInfo->bSecureStreamFlag != 1) ||
+                   (demux->mediaInfo.nVideoStreamNum <= 0 && demux->mediaInfo.nAudioStreamNum > 0))
                 {
-                    //* send a fetch message to start the cache loop.
-                    memset(&newMsg, 0, sizeof(AwMessage));
-                    newMsg.messageId = DEMUX_COMMAND_START;
-                    AwMessageQueuePostMessage(demux->mqCache, &newMsg);
+                    if(pthread_create(&demux->cacheThreadId, NULL, CacheThread, (void*)demux) == 0)
+                    {
+                        //* send a fetch message to start the cache loop.
+                        memset(&newMsg, 0, sizeof(AwMessage));
+                        newMsg.messageId = DEMUX_COMMAND_START;
+                        AwMessageQueuePostMessage(demux->mqCache, &newMsg);
+                    }
+                    else
+                        demux->cacheThreadId = 0;
                 }
-                else
-                    demux->cacheThreadId = 0;
             }
 
             //* set player and media format info to cache for seek processing.

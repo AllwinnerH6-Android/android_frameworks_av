@@ -2879,6 +2879,8 @@ static int threadNum(CdxHttpStreamImplT *impl)
         ret = 1;
     else if(impl->totalSize <= EACH_CACHE_SIZE || impl->seekAble == 0)
         ret = 1;
+    else if(impl->keepAlive == 1)
+        ret = 1;
     else
     {
         ret = impl->totalSize/EACH_CACHE_SIZE +
@@ -2902,8 +2904,8 @@ static int threadNum(CdxHttpStreamImplT *impl)
         ret = 1;
     }
 
-    logd("===== cFlag=%d, totalSize=%lld, sFlag=%d, comFlag=%d, tNum=%d =========",
-        impl->chunkedFlag, impl->totalSize, impl->seekAble, impl->compressed, ret);
+    logd("===== cFlag=%d, totalSize=%lld, sFlag=%d, comFlag=%d, kFlag=%d, tNum=%d =========",
+        impl->chunkedFlag, impl->totalSize, impl->seekAble, impl->compressed, impl->keepAlive, ret);
     return ret;
 }
 static int setHeaderToDlctx(DownloadCtxT *d, CdxHttpStreamImplT *impl)
@@ -3070,6 +3072,7 @@ static cdx_int32 __CdxHttpStreamConnect(CdxStreamT *stream)
 
     impl->totalSize = impl->dlct.totalSize;
     impl->seekAble = impl->dlct.seekAble;
+    impl->keepAlive = impl->dlct.keepAlive;
 #if __CONFIG_ZLIB
     impl->compressed = impl->dlct.compressed;
 #endif

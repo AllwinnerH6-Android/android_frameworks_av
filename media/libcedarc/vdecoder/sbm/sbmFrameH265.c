@@ -738,8 +738,8 @@ static void detectWithStartCode(SbmFrame* pSbm)
         int nNaluType = (tmpBuf[0] & 0x7e) >> 1;
 
         logv("*** nNaluType = %d",nNaluType);
-        if((nNaluType >= SBM_HEVC_NAL_VPS && nNaluType <= SBM_HEVC_NAL_AUD) ||
-            nNaluType == SBM_HEVC_NAL_SEI_PREFIX)
+        if((nNaluType >= SBM_HEVC_NAL_VPS && nNaluType <= SBM_HEVC_NAL_AUD)/* ||
+            nNaluType == SBM_HEVC_NAL_SEI_PREFIX*/)//fix for kodi_17 version:(nalu+SEI)+(nalu+SEI)+...+(nalu+SEI)
         {
             /* Begining of access unit, needn't bFirstSliceSegment */
             if(pDetectInfo->bCurFrameStartCodeFound == 1)

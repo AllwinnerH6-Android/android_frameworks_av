@@ -1435,6 +1435,7 @@ bool AudioRecord::AudioRecordThread::threadLoop()
         return false;
     }
     nsecs_t ns =  mReceiver.processAudioBuffer();
+    struct timespec abs_ts;
     switch (ns) {
     case 0:
         return true;
@@ -1445,7 +1446,14 @@ bool AudioRecord::AudioRecordThread::threadLoop()
         return false;
     case NS_WHENEVER:
         // Event driven: call wake() when callback notifications conditions change.
-        ns = INT64_MAX;
+        clock_gettime(CLOCK_REALTIME, &abs_ts);
+        ns = (INT32_MAX - abs_ts.tv_sec - 30 );
+        if (ns < 0) {
+            ns = 10*1000000000ll;
+        } else {
+            ns = ns*1000000000ll;
+        }
+        ALOGI( "processAudioBuffer() returned NS_WHENEVER , wait %lld ns" , ns);
         // fall through
     default:
         LOG_ALWAYS_FATAL_IF(ns < 0, "processAudioBuffer() returned %" PRId64, ns);

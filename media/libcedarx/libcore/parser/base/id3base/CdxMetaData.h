@@ -16,11 +16,11 @@
 #define META_MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
 #define META_MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
-typedef enum _key_string CdxMetaKeyString;
-typedef struct _Map Map;
-typedef enum _META_TITLE_KINDS META_IDX;
+//typedef enum key_string CdxMetaKeyString;
+//typedef struct _Map Map;
+//typedef enum _META_TITLE_KINDS META_IDX;
 
-enum _META_TITLE_KINDS
+typedef enum _META_TITLE_KINDS
 {
     ARTIST = 0,
     ALBUM,
@@ -34,9 +34,9 @@ enum _META_TITLE_KINDS
     DISCNUMBER,
     COMPILATION,
     DATE,
-};
+} META_IDX;
 
-enum _key_string
+typedef enum _key_string
 {
     CdxMetaKeyAlbum             = META_MKBETAG('a','l','b','u'),  // cstring
     CdxMetaKeyArtist            = META_MKBETAG('a','r','t','i'),  // cstring
@@ -55,14 +55,14 @@ enum _key_string
     CdxMetaKeyCompilation       = META_MKBETAG('c','p','i','l'),  // cstring
     CdxMetaKeyLocation          = META_MKBETAG('l','o','c',' '),  // cstring
     CdxMetaKeyTimeScale         = META_MKBETAG('t','m','s','l'),  // cdx_int32
-};
+} CdxMetaKeyString;
 
-struct _Map{
+typedef struct _Map{
     META_IDX idx;
     CdxMetaKeyString key;
     const char *tag1;
     const char *tag2;
-};
+} Map;
 
 typedef enum _char_enc
 {

@@ -6,8 +6,9 @@
 #include "cdx_log.h"
 #include <utils/String8.h>
 #include <media/mediaplayer.h>
-
-#if BOARD_USE_PLAYREADY
+// we change macro BOARD_USE_PLAYREADY to BOARD_USE_PLAYREADY_LICENSE
+// since android P, but it can work on old android platform(please look at awplayer/android.mk).
+#if BOARD_USE_PLAYREADY_LICENSE
 
 #define DUMP_NETWORK_DATA 1
 
@@ -465,6 +466,11 @@ status_t PlayReady_Drm_Invoke(const Parcel &request, Parcel *reply)
 
 status_t PlayReady_Drm_Invoke(const Parcel &request, Parcel *reply)
 {
+    int func;
+    int ret = request.readInt32(&func);
+    if(ret != OK)
+        return ret;
+
     reply->writeInt32(-1);
     return 0;
 }

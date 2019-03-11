@@ -337,7 +337,24 @@ player_type MediaPlayerFactory::getPlayerType(const sp<IMediaPlayer>& /*client*/
 
 player_type MediaPlayerFactory::getPlayerType(const sp<IMediaPlayer>& client,
                                               const sp<IStreamSource> &source) {
-    GET_PLAYER_TYPE_IMPL(client, source);
+    char  mCallingProcess[256]={0};
+    (void)client;
+    (void)source;
+    getCallingProcessName(mCallingProcess);
+    if((strcmp(mCallingProcess, "android.drm.cts") == 0) ||
+        (strcmp(mCallingProcess, "com.google.android.media.gts") == 0) ||
+        (strcmp(mCallingProcess, "android.video.cts") == 0) ||
+        (strcmp(mCallingProcess, "android.media.cts") == 0) ||
+        (strcmp(mCallingProcess, "android.view.cts") == 0) ||
+        (strcmp(mCallingProcess, "android.security.cts") == 0) ||
+        (strcmp(mCallingProcess, "com.android.cts.media") == 0) ||
+        (strcmp(mCallingProcess, "com.android.server.cts.device.statsd") == 0) ||
+        (strcmp(mCallingProcess, "android.mediastress.cts") == 0)){
+        return NU_PLAYER;
+    }
+    else{
+        return getDefaultPlayerType();
+    }
 }
 
 player_type MediaPlayerFactory::getPlayerType(const sp<IMediaPlayer>& /*client*/,

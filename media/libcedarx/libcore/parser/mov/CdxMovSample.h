@@ -12,6 +12,9 @@
 #ifndef CDX_mov_sample_H
 #define CDX_mov_sample_H
 #include "CdxMovParser.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct StscParameter
 {
@@ -44,4 +47,7 @@ CDX_S32 MovSeekSampleFragment(struct CdxMovParser *p,MOVContext *c,cdx_int64  ti
 CDX_S32 MovSeekSample(struct CdxMovParser *p,MOVContext *c,cdx_int64 seekTime,
 	                           SeekModeType seekModeType);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

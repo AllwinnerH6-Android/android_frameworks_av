@@ -10,6 +10,9 @@
 
 #ifndef CDX__mov_parser_H
 #define CDX__mov_parser_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 #include <stdio.h>
@@ -491,6 +494,7 @@ typedef struct MOVContext
     float               android_capture_fps;
 
     cdx_int32           isReadEnd;
+    cdx_bool           bSeekWithoutKeyframe;
 } MOVContext;
 
 #define INT_MAX      0x7fffffff
@@ -503,5 +507,9 @@ CDX_S16 CdxMovClose(struct CdxMovParser *p);
 CDX_S16 CdxMovRead(struct CdxMovParser *p);
 int CdxMovSeek(struct CdxMovParser *p, cdx_int64  timeUs, SeekModeType seekModeType);
 CDX_S32 CdxMovSetStream(struct CdxMovParser *p);
+CDX_U32 ReadStss(MOVContext *c, MOVStreamContext *st, cdx_uint32 idx);
 
+#ifdef __cplusplus
+}
+#endif
 #endif

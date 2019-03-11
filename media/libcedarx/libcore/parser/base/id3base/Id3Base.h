@@ -24,7 +24,7 @@
 #define V1_TAG_SIZE 128
 
 typedef struct _ID3 ID3;
-typedef enum _Version Version;
+//typedef enum _Version Version;
 typedef struct _Iterator Iterator;
 typedef struct _id3_header id3_header;
 
@@ -46,14 +46,14 @@ struct _Iterator {
     size_t     (*getHeaderLength)(void* hself);
 };
 
-enum _Version {
+typedef enum _Version {
     ID3_UNKNOWN,
     ID3_V1,
     ID3_V1_1,
     ID3_V2_2,
     ID3_V2_3,
     ID3_V2_4,
-};
+} Version;
 
 struct _id3_header {
     char id[3];

@@ -419,6 +419,8 @@ void SetRawPlayParam(AudioDecoder* pDecoder,void *self);
 void SetRawPlayParam(AudioDecoder* pDecoder,void *self,int flag);
 #endif
 
+int CheckAudioDecoder(AudioDecoder* pDecoder);
+
 #ifdef __cplusplus
 }
 #endif

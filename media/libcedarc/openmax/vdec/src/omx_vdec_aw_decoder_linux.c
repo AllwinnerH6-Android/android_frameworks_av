@@ -134,7 +134,7 @@ static OMX_U32 liGetStreamFormat(OMX_VIDEO_CODINGTYPE videoCoding)
     return VIDEO_CODEC_FORMAT_UNKNOWN;
 }
 
-void liGetStremInfo(OmxAwDecoderContext *pCtx)
+void liGetStreamInfo(OmxAwDecoderContext *pCtx)
 {
     OMX_PARAM_PORTDEFINITIONTYPE* inDef = getPortDef(pCtx->pInPort);
     OMX_VIDEO_PARAM_PORTFORMATTYPE* inFormatType = getPortFormatType(pCtx->pInPort);
@@ -159,7 +159,7 @@ static int liDealWithInitData(OmxAwDecoderContext *pCtx)
         OMX_ASSERT((pInBufHdr->nFilledLen + pCtx->mCodecSpecificDataLen) <=
                     CODEC_SPECIFIC_DATA_LENGTH);
 
-        OMX_U8* pInBuffer = pInBuffer = pInBufHdr->pBuffer;
+        OMX_U8* pInBuffer = pInBufHdr->pBuffer;
         memcpy(pCtx->mCodecSpecificData + pCtx->mCodecSpecificDataLen,
                pInBuffer,
                pInBufHdr->nFilledLen);
@@ -182,10 +182,10 @@ static int liDealWithInitData(OmxAwDecoderContext *pCtx)
         }
         else
         {
-            pCtx->mStreamInfo.pCodecSpecificData      = NULL;
+            pCtx->mStreamInfo.pCodecSpecificData    = NULL;
             pCtx->mStreamInfo.nCodecSpecificDataLen = 0;
         }
-        returnPortBuffer(pCtx->pInPort);
+        doReturnPortBuffer(pCtx->pInPort);
         return 0;
     }
     return -1;
@@ -439,7 +439,7 @@ static int __liPrepare(OmxDecoder* pDec)
     if(-1 == liDealWithInitData(pCtx))
         return -1;
     logd("decoder prepare");
-    liGetStremInfo(pCtx);
+    liGetStreamInfo(pCtx);
 
     OmxAcquireMutex(pCtx->awMutexHandler);
     //*if mdecoder had closed before, we should create it
@@ -872,10 +872,11 @@ static OmxDecoderOpsT mAwDecoderOps =
 };
 
 
-OmxDecoder* OmxDecoderCreate(AwOmxVdecPort* in, AwOmxVdecPort* out)
+OmxDecoder* OmxDecoderCreate(AwOmxVdecPort* in, AwOmxVdecPort* out, OMX_BOOL bIsSecureVideoFlag)
 {
     logv("OmxDecoderCreate.");
     OmxAwDecoderContext* pCtx;
+    CEDARC_UNUSE(bIsSecureVideoFlag);
     pCtx = (OmxAwDecoderContext*)malloc(sizeof(OmxAwDecoderContext));
     if(pCtx == NULL)     {
         loge("malloc memory fail.");

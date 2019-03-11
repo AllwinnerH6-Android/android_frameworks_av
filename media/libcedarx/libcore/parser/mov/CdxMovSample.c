@@ -2066,9 +2066,10 @@ CDX_S32 MovSeekSample(struct CdxMovParser *p,MOVContext *c,cdx_int64 seekTime,
         }
         //CDX_LOGV("---- seek_time = %lld", timeUs);
         CDX_LOGD("############## sfrmidx = [%d]", frmidx);
-        frmidx = movFindKeyframe(p, (unsigned int)frmidx, seekModeType,
-                             seekTime);
-        CDX_LOGD("--- key frame = %d", frmidx);
+        if(!c->bSeekWithoutKeyframe)
+            frmidx = movFindKeyframe(p, (unsigned int)frmidx, seekModeType, seekTime);
+        CDX_LOGD("--- key frame = [%d], seekWithoutKeyFrame [%s]", frmidx,
+            c->bSeekWithoutKeyframe ? "Yes" : "No");
         if(frmidx < 0)
         {
             CDX_LOGW("look for key frame failed!\n");

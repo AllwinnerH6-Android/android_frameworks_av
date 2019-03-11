@@ -848,8 +848,17 @@ static int switchBuffer(LayerCtrlContext* lc)
         GraphicBufferMapper& graphicMapper = GraphicBufferMapper::get();
         Rect bounds(lc->nWidth, lc->nHeight);
         graphicMapper.lock(pWindowBuf->handle,lc->nUsage, bounds, &pDataBuf);
-        memset(pDataBuf, 0x10, YSize);
-        memset((char*)pDataBuf+YSize, 0x80, YSize/2);
+        if(lc->eDisplayPixelFormat == PIXEL_FORMAT_P010_UV ||
+           lc->eDisplayPixelFormat == PIXEL_FORMAT_P010_VU)
+        {
+            memset(pDataBuf, 0x10, YSize*2);
+            memset((char*)pDataBuf+YSize*2, 0x80, YSize);
+        }
+        else
+        {
+            memset(pDataBuf, 0x10, YSize);
+            memset((char*)pDataBuf+YSize, 0x80, YSize/2);
+        }
         graphicMapper.unlock(pWindowBuf->handle);
 
         lc->pNativeWindow->queueBuffer_DEPRECATED(lc->pNativeWindow, pWindowBuf);

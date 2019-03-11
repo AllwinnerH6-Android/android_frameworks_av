@@ -885,6 +885,7 @@ static int showProgressivePicture(VideoRenderComp *p)
         VideoPicture* pReturnPicture = NULL;
         QueueBufferToShow(p, p->pPicture);
 
+        p->pPicture = NULL;
         if(p->nSetToDecoderBufferNum < p->nGpuBufferNum)
         {
             // set all of the nativeBuffer to decoder
@@ -918,7 +919,6 @@ static int showProgressivePicture(VideoRenderComp *p)
             LayerDequeueBuffer(p->pLayerCtrl, &pReturnPicture, 0);
             VideoDecCompReturnPicture(p->pDecComp, pReturnPicture);
         }
-        p->pPicture = NULL;
     }
 
     return 0;

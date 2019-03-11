@@ -86,9 +86,16 @@ LOCAL_STATIC_LIBRARIES = \
 LOCAL_STATIC_LIBRARIES += libxml2
 
 ifeq ($(BOARD_USE_PLAYREADY), 1)
+BOARD_USE_PLAYREADY_BASE := 1
+ifeq ($(CONF_ANDROID_VERSION),9)
+BOARD_USE_PLAYREADY_BASE := 0
+endif
+endif
+ifeq ($(BOARD_USE_PLAYREADY_BASE), 1)
 LOCAL_SHARED_LIBRARIES += libaw_env libMemAdapter libplayreadypk
 else
 LOCAL_STATIC_LIBRARIES += libaw_env
+LOCAL_SHARED_LIBRARIES += libdrmframework libbinder libmedia libstagefright_foundation libmediadrm
 endif
 
 ifeq ($(TARGET_ARCH),arm)
