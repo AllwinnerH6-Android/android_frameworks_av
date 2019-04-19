@@ -1242,7 +1242,7 @@ static void TransformYV12ToYUV420(VideoPicture* pPicture, TranBufferInfo* pTranB
     nCopyDataWidth  = nPicRealWidth;
     nCopyDataHeight = nPicRealHeight;
 
-    logd("nPicRealWidth & H = %d, %d,"
+    logv("nPicRealWidth & H = %d, %d,"
           "nSrcBufWidth & H = %d, %d,"
           "nDstBufWidth & H = %d, %d,"
           "nCopyDataWidth & H = %d, %d",
@@ -2526,6 +2526,7 @@ static inline void __anDecode(OmxDecoder* pDec)
         }
         else
         {
+            pCtx->callback(pCtx->pUserData, AW_OMX_CB_CONTINUE_SUBMIT, NULL);
             OmxTimedWaitSem(pCtx->mSemInData, 2);
         }
     }
